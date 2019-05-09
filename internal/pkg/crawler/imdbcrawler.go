@@ -2,13 +2,15 @@ package imdb
 
 import (
 	"fmt"
-	"github.com/PhamDuyKhang/littledetective/internal/pkg/flog"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/globalsign/mgo"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/globalsign/mgo"
+
+	"github.com/PhamDuyKhang/littledetective/internal/pkg/flog"
 )
 
 type (

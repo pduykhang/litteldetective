@@ -1,12 +1,14 @@
 package api
 
 import (
+	"net/http"
+
+	"github.com/gorilla/mux"
+
 	"github.com/PhamDuyKhang/littledetective/internal/dataconnection"
 	"github.com/PhamDuyKhang/littledetective/internal/film"
 	"github.com/PhamDuyKhang/littledetective/internal/handler"
 	"github.com/PhamDuyKhang/littledetective/internal/pkg/flog"
-	"github.com/gorilla/mux"
-	"net/http"
 )
 
 func Init() *mux.Router {

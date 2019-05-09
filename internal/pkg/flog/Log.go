@@ -1,10 +1,11 @@
 package flog
 
 import (
-	"github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type (

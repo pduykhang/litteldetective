@@ -3,10 +3,11 @@ package film
 import (
 	"context"
 	"fmt"
+	"reflect"
+
+	"github.com/olivere/elastic"
 
 	"github.com/PhamDuyKhang/littledetective/internal/types"
-	"github.com/olivere/elastic"
-	"reflect"
 )
 
 type (

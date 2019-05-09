@@ -1,10 +1,11 @@
 package film
 
 import (
-	imdb "github.com/PhamDuyKhang/littledetective/internal/pkg/crawler"
-	"github.com/PhamDuyKhang/littledetective/internal/types"
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+
+	imdb "github.com/PhamDuyKhang/littledetective/internal/pkg/crawler"
+	"github.com/PhamDuyKhang/littledetective/internal/types"
 )
 
 type (

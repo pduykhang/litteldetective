@@ -2,8 +2,9 @@ package respond
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 func JSON(w http.ResponseWriter, status int, data interface{}) {

@@ -2,8 +2,9 @@ package marshal
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 func ParseRequest(r *http.Request, t interface{}) (error error) {
