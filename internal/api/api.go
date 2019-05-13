@@ -102,3 +102,6 @@ func Init(exc *ExternalConn) *mux.Router {
 	return r
 
 }
+func (e ExternalConn) Close() error {
+	return e.Database.Close()
+}
