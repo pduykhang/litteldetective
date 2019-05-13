@@ -1,4 +1,4 @@
-package imdb
+package crawler
 
 import "github.com/google/uuid"
 
