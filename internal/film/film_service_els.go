@@ -1,6 +1,8 @@
 package film
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/PhamDuyKhang/littledetective/internal/pkg/flog"
 	"github.com/PhamDuyKhang/littledetective/internal/types"
 )
@@ -11,12 +13,12 @@ type (
 		InsertData(film types.Film) (string, error)
 	}
 	FilmService struct {
-		l flog.Longer
+		l flog.Logger
 		f Filmer
 	}
 )
 
-func NewFilmService(f Filmer, longer flog.Longer) *FilmService {
+func NewFilmService(f Filmer, longer flog.Logger) *FilmService {
 	longer.SetLocal("film")
 	return &FilmService{
 		l: longer,
@@ -26,10 +28,7 @@ func NewFilmService(f Filmer, longer flog.Longer) *FilmService {
 func (fs *FilmService) FulTextSearch(searchText string) (types.SearchResult, error) {
 	searchRespond, err := fs.f.Search(searchText)
 	if err != nil {
-		return types.SearchResult{}, err
-	}
-	if err != nil {
-		return types.SearchResult{}, err
+		return types.SearchResult{}, errors.Wrap(err, "fail to query form elastic search")
 	}
 	return searchRespond, nil
 }

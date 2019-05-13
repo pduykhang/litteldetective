@@ -1,13 +1,11 @@
 package handler
 
 import (
+	"github.com/gorilla/mux"
 	"net/http"
 
-	"github.com/gorilla/mux"
-
-	imdb "github.com/PhamDuyKhang/littledetective/internal/pkg/crawler"
 	"github.com/PhamDuyKhang/littledetective/internal/pkg/flog"
-	"github.com/PhamDuyKhang/littledetective/internal/pkg/marshal"
+	"github.com/PhamDuyKhang/littledetective/internal/pkg/request"
 	"github.com/PhamDuyKhang/littledetective/internal/pkg/respond"
 	"github.com/PhamDuyKhang/littledetective/internal/types"
 )
@@ -17,18 +15,16 @@ type (
 		GetFilmByID(id string) (types.Film, error)
 		GetAllFilm() ([]types.Film, error)
 		AddFilm(f types.Film) (types.Film, error)
+		GenerateFilm() error
 	}
 	FilmHandler struct {
 		s  FilmService
 		el SearchService
-		l  flog.Longer
-	}
-	CrawlURL struct {
-		URL string `json:"url"`
+		l  flog.Logger
 	}
 )
 
-func NewFilmHandler(s FilmService, logger flog.Longer, fr SearchService) *FilmHandler {
+func NewFilmHandler(s FilmService, logger flog.Logger, fr SearchService) *FilmHandler {
 	logger.SetLocal("handler")
 	return &FilmHandler{
 		s:  s,
@@ -43,12 +39,12 @@ func (h FilmHandler) GetFilm(w http.ResponseWriter, r *http.Request) {
 		respond.JSON(w, http.StatusInternalServerError, map[string]string{"status": "500", "message": "error when insert data"})
 		return
 	}
-	respond.JSON(w, http.StatusAccepted, listFilm)
+	respond.JSON(w, http.StatusOK, listFilm)
 	return
 }
 func (h FilmHandler) AddFilm(w http.ResponseWriter, r *http.Request) {
 	film := types.Film{}
-	err := marshal.ParseRequest(r, &film)
+	err := request.ParseRequest(r, &film)
 	if err != nil {
 		h.l.Errorf("can't parse data form http request err: %v", err)
 		respond.JSON(w, http.StatusBadRequest, map[string]string{"status": "400", "message": "can't get content form your request"})
@@ -64,6 +60,7 @@ func (h FilmHandler) AddFilm(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.l.Errorf("have error when insert data into elastic search server: %v", err)
 		respond.JSON(w, http.StatusInternalServerError, map[string]string{"status": "500", "message": "your data is not synchronized"})
+		return
 	}
 	respond.JSON(w, http.StatusAccepted, newFilm.ID)
 	return
@@ -74,16 +71,20 @@ func (h FilmHandler) GetFilmWithID(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 	film, err := h.s.GetFilmByID(id)
 	if err != nil {
-		h.l.Errorf("error when insert data %v", err)
-		respond.JSON(w, http.StatusInternalServerError, map[string]string{"status": "500", "message": "error when insert data"})
+		h.l.Errorf("error when get data %v", err)
+		respond.JSON(w, http.StatusInternalServerError, map[string]string{"status": "500", "message": "error when get data"})
 		return
 	}
-	respond.JSON(w, http.StatusAccepted, film)
+	respond.JSON(w, http.StatusOK, film)
 	return
 }
 func (h FilmHandler) GenerateData(w http.ResponseWriter, r *http.Request) {
-	imdb.Crawler()
-	respond.JSON(w, http.StatusAccepted, map[string]string{"status": "200", "message": "generation is successfully "})
+	err := h.s.GenerateFilm()
+	if err != nil {
+		respond.JSON(w, http.StatusInternalServerError, map[string]string{"status": "500", "message": "generation is fail "})
+		return
+	}
+	respond.JSON(w, http.StatusOK, map[string]string{"status": "200", "message": "generation is successfully "})
 	return
 }
 func (h FilmHandler) Sync(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +97,7 @@ func (h FilmHandler) Sync(w http.ResponseWriter, r *http.Request) {
 	for _, film := range listFilm {
 		id, err := h.el.InsertDataToElastic(film)
 		if err != nil {
-
+			h.l.Errorf("film %s is not inserted ", film.Title)
 		}
 		h.l.Infof("insert %s with index := %s", film.Title, id)
 	}

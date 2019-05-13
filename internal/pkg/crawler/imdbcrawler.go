@@ -1,7 +1,8 @@
-package imdb
+package crawler
 
 import (
 	"fmt"
+	"github.com/PhamDuyKhang/littledetective/internal/types"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,50 +14,14 @@ import (
 	"github.com/PhamDuyKhang/littledetective/internal/pkg/flog"
 )
 
-type (
-	Film struct {
-		ID          string              `json:"id" bson:"_id"`
-		Rank        int                 `json:"rank" bson:"rank"`
-		URL         string              `json:"url" bson:"url"`
-		Title       string              `json:"title" bson:"title"`
-		Rate        string              `json:"rate" bson:"rate"`
-		ReleaseDate int                 `json:"release_date" bson:"release_date"`
-		Description string              `json:"description" bson:"description"`
-		Credit      map[string][]string `json:"credit" bson:"credit"`
-	}
-)
-
-func Crawler() {
-	l := flog.New()
-	l.SetLocal("imdb")
-	filmIn := make(chan Film, 20)
-	filmOut := make(chan Film, 20)
-	go func() {
-		var wg sync.WaitGroup
-		for i := 1; i <= 20; i++ {
-			wg.Add(1)
-			go ExtractDetail(i, wg, filmIn, filmOut, l)
-		}
-		wg.Wait()
-	}()
-	go func() {
-		SaveData(filmOut, l)
-	}()
-	l.Infof("extraction is stared")
-	MakeURLTopRate(filmIn, l)
-	l.Infof("extraction is done close channel")
-	close(filmIn)
-	return
-
-}
-func MakeURLTopRate(filmURLChan chan Film, l *flog.Flog) {
+func MakeURLTopRate(filmURLChan chan types.Film, l *flog.Flog) error {
 	topURL := "https://www.imdb.com/chart/top?ref_=nv_mv_250"
 	doc, err := GetDocFormURL(topURL)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 	doc.Find("table.chart").Find("tbody.lister-list").Find("tr").Each(func(rank int, films *goquery.Selection) {
-		f := Film{}
+		f := types.Film{}
 		f.Rank = rank + 1
 		filmURL, ok := films.Find("td.titleColumn").Find("a").Attr("href")
 		if ok {
@@ -77,10 +42,10 @@ func MakeURLTopRate(filmURLChan chan Film, l *flog.Flog) {
 		f.ID = NewUUID()
 		filmURLChan <- f
 	})
-
+	return nil
 }
 
-func ExtractDetail(idx int, wg sync.WaitGroup, fimIn chan Film, filmOut chan Film, l *flog.Flog) {
+func ExtractDetail(idx int, wg *sync.WaitGroup, fimIn chan types.Film, filmOut chan types.Film, l *flog.Flog) {
 	defer wg.Done()
 	for {
 		select {
@@ -90,11 +55,10 @@ func ExtractDetail(idx int, wg sync.WaitGroup, fimIn chan Film, filmOut chan Fil
 				return
 			}
 			l.Infof("crawler #%d is crawling", idx)
-			newFilm := film
-			l.Infof("url %s being extracted", newFilm.URL)
-			filmDoc, err := GetDocFormURL(newFilm.URL)
+			l.Infof("url %s being extracted", film.URL)
+			filmDoc, err := GetDocFormURL(film.URL)
 			if err != nil {
-				l.Errorf("%s extraction is fail", newFilm.Title)
+				l.Errorf("%s extraction is fail", film.Title)
 			}
 			film.Description = strings.TrimSpace(filmDoc.Find("div.plot_summary").Find("div.summary_text").Text())
 			m := make(map[string][]string)
@@ -109,7 +73,7 @@ func ExtractDetail(idx int, wg sync.WaitGroup, fimIn chan Film, filmOut chan Fil
 				m[key] = value
 			})
 			film.Credit = m
-			l.Infof("%s is pushed to film channel to save ", newFilm.Title)
+			l.Infof("%s is pushed to film channel to save ", film.Title)
 			filmOut <- film
 		}
 	}
@@ -137,14 +101,8 @@ func GetDocFormURL(url string) (*goquery.Document, error) {
 	}
 	return doc, nil
 }
-func SaveData(in chan Film, l *flog.Flog) {
-	session, err := mgo.Dial("mongodb:27017")
-	if err != nil {
-		l.Errorf("dialing is fail %v", err)
-		return
-	}
-	session.SetMode(mgo.Monotonic, true)
-	s := session.Clone()
+func SaveData(in chan types.Film, l *flog.Flog, session *mgo.Session) {
+	defer session.Close()
 	for {
 		select {
 		case listFilms, ok := <-in:
@@ -152,11 +110,11 @@ func SaveData(in chan Film, l *flog.Flog) {
 				l.Infof("all data is saved")
 				return
 			}
-			err = s.DB("imdbfilms").C("movie").Insert(listFilms)
-			l.Infof("%s is saved", listFilms.Title)
+			err := session.DB("imdbfilms").C("movie").Insert(listFilms)
 			if err != nil {
 				l.Errorf("can't save data to database %v", err)
 			}
+			l.Infof("%s is saved", listFilms.Title)
 		}
 	}
 }

@@ -10,6 +10,11 @@ import (
 	"github.com/PhamDuyKhang/littledetective/internal/types"
 )
 
+const (
+	ELASTIC_INDEX = "imdb"
+	ELASTIC_TYPE  = "film"
+)
+
 type (
 	ElasticFilmRepository struct {
 		client *elastic.Client
@@ -25,7 +30,7 @@ func (el *ElasticFilmRepository) Search(text string) (types.SearchResult, error)
 	var resultType types.Film
 	termQuery := elastic.NewQueryStringQuery(text)
 	searchResult, err := el.client.Search().
-		Index("imdb").
+		Index(ELASTIC_INDEX).
 		Query(termQuery).
 		Pretty(true).
 		Do(context.Background())
@@ -53,7 +58,7 @@ func (el *ElasticFilmRepository) Search(text string) (types.SearchResult, error)
 	}, nil
 }
 func (el *ElasticFilmRepository) InsertData(film types.Film) (string, error) {
-	put, err := el.client.Index().Index("imdb").Type("film").Id(film.ID).BodyJson(&film).Do(context.Background())
+	put, err := el.client.Index().Index(ELASTIC_INDEX).Type(ELASTIC_TYPE).Id(film.ID).BodyJson(&film).Do(context.Background())
 	if err != nil {
 		fmt.Println(err)
 		return "", err
