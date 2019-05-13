@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/PhamDuyKhang/littledetective/internal/pkg/flog"
-	"github.com/PhamDuyKhang/littledetective/internal/pkg/marshal"
+	"github.com/PhamDuyKhang/littledetective/internal/pkg/request"
 	"github.com/PhamDuyKhang/littledetective/internal/pkg/respond"
 	"github.com/PhamDuyKhang/littledetective/internal/types"
 )
@@ -16,11 +16,11 @@ type (
 	}
 	SearchHandler struct {
 		s      SearchService
-		logger flog.Longer
+		logger flog.Logger
 	}
 )
 
-func NewSearchHandeler(s SearchService, l flog.Longer) *SearchHandler {
+func NewSearchHandler(s SearchService, l flog.Logger) *SearchHandler {
 	l.SetLocal("handler")
 	return &SearchHandler{
 		s:      s,
@@ -29,7 +29,7 @@ func NewSearchHandeler(s SearchService, l flog.Longer) *SearchHandler {
 }
 func (h SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 	requestData := types.SearchRequest{}
-	err := marshal.ParseRequest(r, &requestData)
+	err := request.ParseRequest(r, &requestData)
 	if err != nil {
 		h.logger.Errorf("can't parse data form http request err: %v", err)
 		respond.JSON(w, http.StatusBadRequest, map[string]string{"status": "400", "message": "can't get content form your request"})
@@ -46,12 +46,13 @@ func (h SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h SearchHandler) Test(w http.ResponseWriter, r *http.Request) {
+	h.logger.Infof("test function")
 	respond.JSON(w, http.StatusAccepted, map[string]string{"status": "200", "result": "Hello"})
 	return
 }
 func (h SearchHandler) AddFilmToElastic(w http.ResponseWriter, r *http.Request) {
 	filmData := types.Film{}
-	err := marshal.ParseRequest(r, &filmData)
+	err := request.ParseRequest(r, &filmData)
 	if err != nil {
 		h.logger.Errorf("can't parse data form http request err: %v", err)
 		respond.JSON(w, http.StatusBadRequest, map[string]string{"status": "400", "message": "can't get content form your request"})
