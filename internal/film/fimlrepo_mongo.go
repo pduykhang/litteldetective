@@ -1,10 +1,15 @@
 package film
 
 import (
-	imdb "github.com/PhamDuyKhang/littledetective/internal/pkg/crawler"
-	"github.com/PhamDuyKhang/littledetective/internal/types"
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+
+	"github.com/PhamDuyKhang/littledetective/internal/types"
+)
+
+const (
+	DATABASE_NAME   = "imdbfilms"
+	COLLECTION_NAME = "moive"
 )
 
 type (
@@ -21,9 +26,8 @@ func NewFilmMongoRepository(s *mgo.Session) *FilmMongoRepository {
 
 func (frp FilmMongoRepository) InsertFilm(f types.Film) (types.Film, error) {
 	session := frp.ss.Clone()
-	defer session.Clone()
-	f.ID = imdb.NewUUID()
-	err := session.DB("imdbfilms").C("movie").Insert(f)
+	defer session.Close()
+	err := session.DB(DATABASE_NAME).C(COLLECTION_NAME).Insert(f)
 	if err != nil {
 		return f, err
 	}
@@ -31,18 +35,18 @@ func (frp FilmMongoRepository) InsertFilm(f types.Film) (types.Film, error) {
 }
 func (frp FilmMongoRepository) GetFilmByID(ID string) (types.Film, error) {
 	session := frp.ss.Clone()
-	defer session.Clone()
+	defer session.Close()
 	var film types.Film
-	if err := session.DB("imdbfilms").C("movie").Find(bson.M{"_id": ID}).One(&film); err != nil {
+	if err := session.DB(DATABASE_NAME).C(COLLECTION_NAME).Find(bson.M{"_id": ID}).One(&film); err != nil {
 		return types.Film{}, err
 	}
 	return film, nil
 }
 func (frp FilmMongoRepository) GetAllFilm() ([]types.Film, error) {
 	session := frp.ss.Clone()
-	defer session.Clone()
+	defer session.Close()
 	var films []types.Film
-	if err := session.DB("imdbfilms").C("movie").Find(bson.M{}).All(&films); err != nil {
+	if err := session.DB(DATABASE_NAME).C(COLLECTION_NAME).Find(bson.M{}).All(&films); err != nil {
 		return nil, err
 	}
 	return films, nil

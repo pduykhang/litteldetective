@@ -1,14 +1,15 @@
 package flog
 
 import (
-	"github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type (
-	Longer interface {
+	Logger interface {
 		Infof(format string, v ...interface{})
 		Errorf(format string, v ...interface{})
 		Debugf(format string, v ...interface{})

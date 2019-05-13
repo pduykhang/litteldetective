@@ -1,8 +1,9 @@
 package dataconnection
 
 import (
-	"github.com/PhamDuyKhang/littledetective/internal/pkg/flog"
 	"github.com/globalsign/mgo"
+
+	"github.com/PhamDuyKhang/littledetective/internal/pkg/flog"
 )
 
 func GetConnection() (*mgo.Session, error) {

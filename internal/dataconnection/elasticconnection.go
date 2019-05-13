@@ -1,8 +1,9 @@
 package dataconnection
 
 import (
-	"github.com/PhamDuyKhang/littledetective/internal/pkg/flog"
 	"github.com/olivere/elastic"
+
+	"github.com/PhamDuyKhang/littledetective/internal/pkg/flog"
 )
 
 func GetElasticConnection() (*elastic.Client, error) {
